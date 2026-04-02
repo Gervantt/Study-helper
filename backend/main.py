@@ -15,7 +15,7 @@ load_dotenv()
 # ── Config ──────────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = os.getenv("GROQ_URL")
-MODEL = "openai/gpt-oss-120b"
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 app = FastAPI(title="Study Helper API")
 
