@@ -137,22 +137,13 @@ Return ONLY a valid JSON array (no markdown, no explanation) with this structure
     "options": ["True", "False"],
     "correct_answer": "True",
     "explanation": "Brief explanation"
-  }},
-  {{
-    "id": 3,
-    "type": "short_answer",
-    "question": "...",
-    "options": [],
-    "correct_answer": "expected answer keywords",
-    "explanation": "Full explanation of the answer"
   }}
 ]
 
 Rules:
 - For "mcq": always provide 4 options labeled A, B, C, D. correct_answer is the letter.
 - For "true_false": options are ["True", "False"]. correct_answer is "True" or "False".
-- For "short_answer": options is empty array. correct_answer is the expected answer.
-- For "mixed": use a variety of question types.
+- For "mixed": use a mix of mcq and true_false question types only.
 - Make questions educational and clear.
 - Return ONLY the JSON array, nothing else."""
 

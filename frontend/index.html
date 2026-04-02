@@ -277,13 +277,7 @@
     flex-shrink: 0;
   }
 
-  .short-answer-wrap {
-    display: flex; gap: 10px;
-    margin-bottom: 16px;
-  }
-  .short-answer-wrap .form-input { flex: 1; }
-
-  .explanation-box {
+.explanation-box {
     margin-top: 16px;
     padding: 16px 20px;
     background: var(--cyan-bg);
@@ -558,11 +552,7 @@ function QuizTab() {
     questions.forEach(q => {
       const userAns = answers[q.id];
       if (!userAns) return;
-      if (q.type === 'short_answer') {
-        if (userAns.toLowerCase().includes(q.correct_answer.toLowerCase().split(' ')[0])) correct++;
-      } else {
-        if (userAns === q.correct_answer) correct++;
-      }
+      if (userAns === q.correct_answer) correct++;
     });
     setScore(correct);
     setPhase('results');
@@ -618,7 +608,6 @@ function QuizTab() {
                 <option value="mixed">Mixed</option>
                 <option value="mcq">Multiple Choice</option>
                 <option value="true_false">True / False</option>
-                <option value="short_answer">Short Answer</option>
               </select>
             </div>
           </div>
@@ -664,29 +653,12 @@ function QuizTab() {
 
       <div className="question-card">
         <div className="question-badge">
-          {q.type === 'mcq' ? '🔘 Multiple Choice' : q.type === 'true_false' ? '✅ True / False' : '✏️ Short Answer'}
+          {q.type === 'mcq' ? '🔘 Multiple Choice' : '✅ True / False'}
           &nbsp;· Q{q.id}
         </div>
         <div className="question-text">{q.question}</div>
 
-        {q.type === 'short_answer' ? (
-          <div>
-            {!isRevealed ? (
-              <div className="short-answer-wrap">
-                <input className="form-input" placeholder="Type your answer..."
-                  value={shortInput} onChange={e => setShortInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && submitShortAnswer(q)} />
-                <button className="btn btn-primary" onClick={() => submitShortAnswer(q)}>Submit</button>
-              </div>
-            ) : (
-              <div style={{marginBottom:12}}>
-                <div style={{marginBottom:6,color:'#788dfa',fontSize:13}}>Your answer: <strong style={{color:'#E8E9ED'}}>{userAnswer}</strong></div>
-                <div style={{fontSize:13,color:'#8B8FA3'}}>Expected: <strong style={{color:'#3DDC84'}}>{q.correct_answer}</strong></div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
+        <div>
             {q.options.map((opt, i) => {
               const letter = q.type === 'true_false' ? opt : opt.charAt(0);
               let cls = 'option-btn';
@@ -705,9 +677,8 @@ function QuizTab() {
               );
             })}
           </div>
-        )}
 
-        {!isRevealed && q.type !== 'short_answer' && (
+        {!isRevealed && (
           <button className="btn btn-ghost btn-sm" style={{marginTop:8}} disabled={!userAnswer}
             onClick={() => revealAnswer(q.id)}>Check Answer</button>
         )}
