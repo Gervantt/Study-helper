@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Study Helper — Exam Mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0D0F14;
+    --bg-card: #161921;
+    --bg-card-hover: #1C1F2A;
+    --bg-input: #1A1D27;
+    --border: #2A2D3A;
+    --border-focus: #6C63FF;
+    --text: #E8E9ED;
+    --text-dim: #8B8FA3;
+    --text-muted: #5C6078;
+    --accent: #6C63FF;
+    --accent-light: #8B84FF;
+    --accent-glow: rgba(108, 99, 255, 0.15);
+    --green: #3DDC84;
+    --green-bg: rgba(61, 220, 132, 0.1);
+    --red: #FF6B6B;
+    --red-bg: rgba(255, 107, 107, 0.1);
+    --orange: #FFAB4A;
+    --orange-bg: rgba(255, 171, 74, 0.1);
+    --cyan: #4ADEDE;
+    --cyan-bg: rgba(74, 222, 222, 0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Ambient background ────────────────── */
+  body::before {
+    content: '';
+    position: fixed; top: -40%; left: -20%;
+    width: 80vw; height: 80vw;
+    background: radial-gradient(circle, rgba(108,99,255,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; bottom: -30%; right: -10%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(74,222,222,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  #root { position: relative; z-index: 1; }
+
+  /* ── Scrollbar ────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Layout ────────────────── */
+  .app { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .header {
+    text-align: center;
+    padding: 48px 0 40px;
+  }
+  .header-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    border-radius: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(108,99,255,0.3);
+  }
+  .header h1 {
+    font-size: 32px; font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--text) 30%, var(--accent-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header p { color: var(--text-dim); margin-top: 6px; font-size: 15px; }
+
+  /* ── Navigation tabs ────────────────── */
+  .nav {
+    display: flex; gap: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .nav button {
+    flex: 1; min-width: 100px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none; border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .nav button:hover { color: var(--text); background: var(--bg-card-hover); }
+  .nav button.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 12px rgba(108,99,255,0.3);
+  }
+  .nav-emoji { font-size: 15px; }
+
+  /* ── Cards ────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-focus); }
+  .card-title {
+    font-size: 16px; font-weight: 600;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Form controls ────────────────── */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: inherit; font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); }
+  .form-select option { background: var(--bg-card); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  .form-row { display: flex; gap: 12px; }
+  .form-row > * { flex: 1; }
+
+  /* ── Buttons ────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 24px;
+    border: none; border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 12px rgba(108,99,255,0.25);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-light);
+    box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+  .btn-sm { padding: 8px 16px; font-size: 13px; }
+  .btn-block { width: 100%; }
+
+  /* ── Quiz ────────────────── */
+  .quiz-progress {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .progress-bar {
+    flex: 1; height: 6px;
+    background: var(--bg-input);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .progress-text { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+
+  .question-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 20px;
+  }
+  .question-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px;
+    background: var(--accent-glow);
+    color: var(--accent-light);
+    border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .question-text {
+    font-size: 18px; font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .option-btn {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--bg-input);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit; font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .option-btn:hover:not(:disabled):not(.selected) {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .option-btn.selected { border-color: var(--accent); background: var(--accent-glow); }
+  .option-btn.correct { border-color: var(--green); background: var(--green-bg); }
+  .option-btn.wrong { border-color: var(--red); background: var(--red-bg); }
+  .option-btn:disabled { cursor: default; }
+  .option-letter {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-card);
+    border-radius: 8px;
+    font-weight: 600; font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .short-answer-wrap {
+    display: flex; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .short-answer-wrap .form-input { flex: 1; }
+
+  .explanation-box {
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: var(--cyan-bg);
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  /* ── Score / Results ────────────────── */
+  .score-card {
+    text-align: center;
+    padding: 48px 32px;
+  }
+  .score-circle {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 42px; font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .score-great { background: var(--green-bg); color: var(--green); border: 3px solid var(--green); }
+  .score-ok { background: var(--orange-bg); color: var(--orange); border: 3px solid var(--orange); }
+  .score-bad { background: var(--red-bg); color: var(--red); border: 3px solid var(--red); }
+  .score-label { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .score-sub { color: var(--text-dim); font-size: 14px; }
+
+  /* ── Flashcards ────────────────── */
+  .flashcard-scene { perspective: 1000px; margin-bottom: 20px; }
+  .flashcard {
+    width: 100%; min-height: 220px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+  .flashcard-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(135deg, var(--bg-card), #1a1730);
+    border-color: var(--accent);
+  }
+  .flashcard-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .flashcard-content {
+    font-size: 18px; font-weight: 500;
+    line-height: 1.5;
+  }
+  .flashcard-hint {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .flashcard-nav {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+  }
+  .flashcard-counter {
+    font-size: 14px; color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Markdown content ────────────────── */
+  .md-content { line-height: 1.7; font-size: 15px; }
+  .md-content h1, .md-content h2, .md-content h3 {
+    font-weight: 600; margin: 20px 0 10px;
+  }
+  .md-content h1 { font-size: 22px; }
+  .md-content h2 { font-size: 18px; }
+  .md-content h3 { font-size: 16px; }
+  .md-content p { margin-bottom: 12px; }
+  .md-content ul, .md-content ol { padding-left: 20px; margin-bottom: 12px; }
+  .md-content li { margin-bottom: 6px; }
+  .md-content strong { color: var(--text); font-weight: 600; }
+  .md-content code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--bg-input);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .md-content pre {
+    background: var(--bg-input);
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+  .md-content pre code { padding: 0; background: none; }
+  .md-content blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  /* ── Chat ────────────────── */
+  .chat-messages {
+    max-height: 480px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-msg {
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: var(--radius) var(--radius) var(--radius) 4px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: white;
+    border-radius: var(--radius) var(--radius) 4px var(--radius);
+  }
+  .chat-msg.bot {
+    align-self: flex-start;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+  }
+  .chat-input-row {
+    display: flex; gap: 10px;
+  }
+  .chat-input-row .form-input { flex: 1; }
+
+  /* ── Loading ────────────────── */
+  .loader {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Tags ────────────────── */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .tag {
+    padding: 6px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tag:hover, .tag.active {
+    border-color: var(--accent);
+    color: var(--accent-light);
+    background: var(--accent-glow);
+  }
+
+  /* ── Empty state ────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state-title { font-size: 18px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* ── Responsive ────────────────── */
+  @media (max-width: 640px) {
+    .form-row { flex-direction: column; }
+    .header h1 { font-size: 26px; }
+    .question-text { font-size: 16px; }
+    .nav button { font-size: 12px; padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const API = '';  // same origin
+
+// ── Markdown renderer ──
+function Md({ text }) {
+  if (!text) return null;
+  const html = marked.parse(text, { breaks: true });
+  return <div className="md-content" dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+// ── Loading Spinner ──
+function Loader({ text = "Generating..." }) {
+  return <div className="loader"><div className="spinner" />{text}</div>;
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUIZ TAB
+// ═══════════════════════════════════════════════════════
+function QuizTab() {
+  const [config, setConfig] = useState({ topic: '', difficulty: 'medium', num_questions: 5, question_type: 'mixed' });
+  const [questions, setQuestions] = useState([]);
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const [shortInput, setShortInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState('setup'); // setup | quiz | results
+  const [score, setScore] = useState(0);
+
+  const quickTopics = ['Data Structures', 'World History', 'Biology', 'Linear Algebra', 'Python', 'Physics'];
+
+  async function startQuiz() {
+    if (!config.topic.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/quiz`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      const data = await res.json();
+      if (data.questions) {
+        setQuestions(data.questions);
+        setCurrent(0);
+        setAnswers({});
+        setRevealed({});
+        setPhase('quiz');
+      }
+    } catch (e) { alert('Error: ' + e.message); }
+    setLoading(false);
+  }
+
+  function selectAnswer(qId, ans) {
+    if (revealed[qId]) return;
+    setAnswers(a => ({ ...a, [qId]: ans }));
+  }
+
+  function revealAnswer(qId) {
+    setRevealed(r => ({ ...r, [qId]: true }));
+  }
+
+  function submitShortAnswer(q) {
+    if (!shortInput.trim()) return;
+    setAnswers(a => ({ ...a, [q.id]: shortInput.trim() }));
+    setRevealed(r => ({ ...r, [q.id]: true }));
+    setShortInput('');
+  }
+
+  function finishQuiz() {
+    let correct = 0;
+    questions.forEach(q => {
+      const userAns = answers[q.id];
+      if (!userAns) return;
+      if (q.type === 'short_answer') {
+        if (userAns.toLowerCase().includes(q.correct_answer.toLowerCase().split(' ')[0])) correct++;
+      } else {
+        if (userAns === q.correct_answer) correct++;
+      }
+    });
+    setScore(correct);
+    setPhase('results');
+  }
+
+  function resetQuiz() {
+    setPhase('setup');
+    setQuestions([]);
+    setAnswers({});
+    setRevealed({});
+    setScore(0);
+    setCurrent(0);
+  }
+
+  if (phase === 'setup') {
+    return (
+      <div>
+        <div className="card">
+          <div className="card-title">📝 Configure Your Quiz</div>
+          <div className="form-group">
+            <label className="form-label">Topic</label>
+            <input className="form-input" placeholder="e.g. Photosynthesis, Binary Trees, World War II..."
+              value={config.topic} onChange={e => setConfig(c => ({ ...c, topic: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && startQuiz()} />
+          </div>
+          <div className="tag-row">
+            {quickTopics.map(t => (
+              <span key={t} className={`tag ${config.topic === t ? 'active' : ''}`}
+                onClick={() => setConfig(c => ({ ...c, topic: t }))}>{t}</span>
+            ))}
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Difficulty</label>
+              <select className="form-select" value={config.difficulty}
+                onChange={e => setConfig(c => ({ ...c, difficulty: e.target.value }))}>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Questions</label>
+              <select className="form-select" value={config.num_questions}
+                onChange={e => setConfig(c => ({ ...c, num_questions: +e.target.value }))}>
+                {[3,5,7,10].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Type</label>
+              <select className="form-select" value={config.question_type}
+                onChange={e => setConfig(c => ({ ...c, question_type: e.target.value }))}>
+                <option value="mixed">Mixed</option>
+                <option value="mcq">Multiple Choice</option>
+                <option value="true_false">True / False</option>
+                <option value="short_answer">Short Answer</option>
+              </select>
+            </div>
+          </div>
+          <button className="btn btn-primary btn-block" onClick={startQuiz} disabled={loading || !config.topic.trim()}>
+            {loading ? <><div className="spinner" style={{width:16,height:16,borderWidth:2}} /> Generating...</> : '⚡ Generate Quiz'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'results') {
+    const pct = Math.round((score / questions.length) * 100);
+    const cls = pct >= 80 ? 'great' : pct >= 50 ? 'ok' : 'bad';
+    const msgs = { great: 'Excellent work! 🎉', ok: 'Good effort! Keep studying 💪', bad: 'Keep going, you\'ll get there! 📚' };
+    return (
+      <div className="card score-card">
+        <div className={`score-circle score-${cls}`}>{pct}%</div>
+        <div className="score-label">{msgs[cls]}</div>
+        <div className="score-sub">{score} out of {questions.length} correct</div>
+        <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button className="btn btn-primary" onClick={resetQuiz}>New Quiz</button>
+          <button className="btn btn-ghost" onClick={() => { setPhase('quiz'); setCurrent(0); }}>Review Answers</button>
+        </div>
+      </div>
+    );
+  }
+
+  // quiz phase
+  const q = questions[current];
+  if (!q) return <Loader />;
+  const isRevealed = revealed[q.id];
+  const userAnswer = answers[q.id];
+
+  return (
+    <div>
+      <div className="quiz-progress">
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+        </div>
+        <span className="progress-text">{current + 1} / {questions.length}</span>
+      </div>
+
+      <div className="question-card">
+        <div className="question-badge">
+          {q.type === 'mcq' ? '🔘 Multiple Choice' : q.type === 'true_false' ? '✅ True / False' : '✏️ Short Answer'}
+          &nbsp;· Q{q.id}
+        </div>
+        <div className="question-text">{q.question}</div>
+
+        {q.type === 'short_answer' ? (
+          <div>
+            {!isRevealed ? (
+              <div className="short-answer-wrap">
+                <input className="form-input" placeholder="Type your answer..."
+                  value={shortInput} onChange={e => setShortInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitShortAnswer(q)} />
+                <button className="btn btn-primary" onClick={() => submitShortAnswer(q)}>Submit</button>
+              </div>
+            ) : (
+              <div style={{marginBottom:12}}>
+                <div style={{marginBottom:6,color:'#788dfa',fontSize:13}}>Your answer: <strong style={{color:'#E8E9ED'}}>{userAnswer}</strong></div>
+                <div style={{fontSize:13,color:'#8B8FA3'}}>Expected: <strong style={{color:'#3DDC84'}}>{q.correct_answer}</strong></div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            {q.options.map((opt, i) => {
+              const letter = q.type === 'true_false' ? opt : opt.charAt(0);
+              let cls = 'option-btn';
+              if (isRevealed) {
+                if (letter === q.correct_answer || opt === q.correct_answer) cls += ' correct';
+                else if (letter === userAnswer || opt === userAnswer) cls += ' wrong';
+              } else if (userAnswer === letter || userAnswer === opt) {
+                cls += ' selected';
+              }
+              return (
+                <button key={i} className={cls} disabled={isRevealed}
+                  onClick={() => selectAnswer(q.id, q.type === 'true_false' ? opt : letter)}>
+                  <span className="option-letter">{q.type === 'true_false' ? (i === 0 ? 'T' : 'F') : String.fromCharCode(65 + i)}</span>
+                  <span>{q.type === 'true_false' ? opt : opt.slice(3)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {!isRevealed && q.type !== 'short_answer' && (
+          <button className="btn btn-ghost btn-sm" style={{marginTop:8}} disabled={!userAnswer}
+            onClick={() => revealAnswer(q.id)}>Check Answer</button>
+        )}
+
+        {isRevealed && q.explanation && (
+          <div className="explanation-box">💡 {q.explanation}</div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between' }}>
+        <button className="btn btn-ghost" disabled={current === 0}
+          onClick={() => setCurrent(c => c - 1)}>← Previous</button>
+        {current < questions.length - 1 ? (
+          <button className="btn btn-primary" onClick={() => setCurrent(c => c + 1)}>Next →</button>
+        ) : (
+          <button className="btn btn-primary" onClick={finishQuiz}>Finish Quiz 🏁</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXPLAIN TAB
+// ═══════════════════════════════════════════════════════
+function ExplainTab() {
+  const [topic, setTopic] = useState('');
+  const [style, setStyle] = useState('simple');
+  const [result, setResult] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const styles = [
+    { key: 'simple', label: '🎯 Simple', desc: 'Clear & concise' },
+    { key: 'detailed', label: '📖 Detailed', desc: 'In-depth' },
+    { key: 'eli5', label: '👶 ELI5', desc: 'Like I\'m 5' },
+    { key: 'analogy', label: '🔗 Analogy', desc: 'Real-world comparisons' },
+  ];
+
+  async function explain() {
+    if (!topic.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/explain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, style })
+      });
+      const data = await res.json();
+      setResult(data.explanation);
+    } catch (e) { alert('Error: ' + e.message); }
+    setLoading(false);
+  }
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-title">💡 Explain a Topic</div>
+        <div className="form-group">
+          <label className="form-label">What do you want to understand?</label>
+          <input className="form-input" placeholder="e.g. Recursion, Quantum entanglement, Supply & demand..."
+            value={topic} onChange={e => setTopic(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && explain()} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Explanation Style</label>
+          <div className="tag-row">
+            {styles.map(s => (
+              <span key={s.key} className={`tag ${style === s.key ? 'active' : ''}`}
+                onClick={() => setStyle(s.key)}>{s.label}</span>
+            ))}
+          </div>
+        </div>
+        <button className="btn btn-primary btn-block" onClick={explain} disabled={loading || !topic.trim()}>
+          {loading ? <><div className="spinner" style={{width:16,height:16,borderWidth:2}} /> Explaining...</> : 'Explain It ✨'}
+        </button>
+      </div>
+      {loading && <Loader text="Thinking..." />}
+      {result && (
+        <div className="card">
+          <Md text={result} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  FLASHCARDS TAB
+// ═══════════════════════════════════════════════════════
+function FlashcardsTab() {
+  const [topic, setTopic] = useState('');
+  const [count, setCount] = useState(10);
+  const [cards, setCards] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function generate() {
+    if (!topic.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/flashcards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, count })
+      });
+      const data = await res.json();
+      setCards(data.cards || []);
+      setIdx(0);
+      setFlipped(false);
+    } catch (e) { alert('Error: ' + e.message); }
+    setLoading(false);
+  }
+
+  function nav(dir) {
+    setFlipped(false);
+    setTimeout(() => setIdx(i => Math.max(0, Math.min(cards.length - 1, i + dir))), 150);
+  }
+
+  if (!cards.length) {
+    return (
+      <div className="card">
+        <div className="card-title">🃏 Flashcard Generator</div>
+        <div className="form-group">
+          <label className="form-label">Topic</label>
+          <input className="form-input" placeholder="e.g. JavaScript closures, Cell biology..."
+            value={topic} onChange={e => setTopic(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && generate()} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Number of Cards</label>
+          <select className="form-select" value={count} onChange={e => setCount(+e.target.value)}>
+            {[5,10,15,20].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-primary btn-block" onClick={generate} disabled={loading || !topic.trim()}>
+          {loading ? <><div className="spinner" style={{width:16,height:16,borderWidth:2}} /> Generating...</> : 'Generate Flashcards 🃏'}
+        </button>
+      </div>
+    );
+  }
+
+  const c = cards[idx];
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+        <span style={{fontSize:14,color:'var(--text-dim)'}}>Topic: <strong style={{color:'var(--text)'}}>{topic}</strong></span>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setCards([]); setFlipped(false); }}>New Set</button>
+      </div>
+      <div className="flashcard-scene" onClick={() => setFlipped(f => !f)}>
+        <div className={`flashcard ${flipped ? 'flipped' : ''}`}>
+          <div className="flashcard-face">
+            <div className="flashcard-label">Question</div>
+            <div className="flashcard-content">{c.front}</div>
+            <div className="flashcard-hint">💡 Hint: {c.hint}</div>
+          </div>
+          <div className="flashcard-face flashcard-back">
+            <div className="flashcard-label">Answer</div>
+            <div className="flashcard-content">{c.back}</div>
+          </div>
+        </div>
+      </div>
+      <div className="flashcard-nav">
+        <button className="btn btn-ghost btn-sm" disabled={idx === 0} onClick={() => nav(-1)}>←</button>
+        <span className="flashcard-counter">{idx + 1} / {cards.length}</span>
+        <button className="btn btn-ghost btn-sm" disabled={idx === cards.length - 1} onClick={() => nav(1)}>→</button>
+      </div>
+      <div style={{textAlign:'center',marginTop:8,fontSize:13,color:'var(--text-muted)'}}>Click card to flip</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  CHAT TAB
+// ═══════════════════════════════════════════════════════
+function ChatTab() {
+  const [messages, setMessages] = useState([
+    { role: 'bot', text: "Hey! 👋 I'm your study assistant. Ask me anything — I'll explain concepts, help with problems, or quiz you on the spot." }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  async function send() {
+    if (!input.trim() || loading) return;
+    const msg = input.trim();
+    setInput('');
+    setMessages(m => [...m, { role: 'user', text: msg }]);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      setMessages(m => [...m, { role: 'bot', text: data.response }]);
+    } catch (e) {
+      setMessages(m => [...m, { role: 'bot', text: 'Sorry, something went wrong. Please try again.' }]);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="card" style={{display:'flex',flexDirection:'column',height:'580px'}}>
+      <div className="card-title">💬 Study Chat</div>
+      <div className="chat-messages" style={{flex:1}}>
+        {messages.map((m, i) => (
+          <div key={i} className={`chat-msg ${m.role}`}>
+            {m.role === 'bot' ? <Md text={m.text} /> : m.text}
+          </div>
+        ))}
+        {loading && <div className="chat-msg bot"><Loader text="Thinking..." /></div>}
+        <div ref={bottomRef} />
+      </div>
+      <div className="chat-input-row">
+        <input className="form-input" placeholder="Ask anything about your studies..."
+          value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()} />
+        <button className="btn btn-primary" onClick={send} disabled={loading || !input.trim()}>Send</button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  APP
+// ═══════════════════════════════════════════════════════
+function App() {
+  const [tab, setTab] = useState('quiz');
+
+  const tabs = [
+    { key: 'quiz', label: 'Exam Mode', icon: '📝' },
+    { key: 'explain', label: 'Explain', icon: '💡' },
+    { key: 'flashcards', label: 'Flashcards', icon: '🃏' },
+    { key: 'chat', label: 'Chat', icon: '💬' },
+  ];
+
+  return (
+    <div className="app">
+      <div className="header">
+        <div className="header-icon">📚</div>
+        <h1>Study Helper</h1>
+        <p>AI-powered exam prep — quizzes, explanations & flashcards</p>
+      </div>
+
+      <div className="nav">
+        {tabs.map(t => (
+          <button key={t.key} className={tab === t.key ? 'active' : ''}
+            onClick={() => setTab(t.key)}>
+            <span className="nav-emoji">{t.icon}</span> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'quiz' && <QuizTab />}
+      {tab === 'explain' && <ExplainTab />}
+      {tab === 'flashcards' && <FlashcardsTab />}
+      {tab === 'chat' && <ChatTab />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
