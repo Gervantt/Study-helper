@@ -68,6 +68,7 @@ async def ask_llm(prompt: str, parse_json: bool = False):
         payload = {
             "model": MODEL,
             "messages": [
+                {"role": "system", "content": "Detect the language of the user's input and respond in that same language."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,
