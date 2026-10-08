@@ -15,7 +15,7 @@ class Settings:
     TEMPERATURE: float = 0.7
 
     CORS_ORIGINS: list[str] = ["*"]
-    FRONTEND_DIR: str = "../frontend"
+    FRONTEND_DIR: str = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
 
 
 settings = Settings()
