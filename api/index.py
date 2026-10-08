@@ -1,25 +1,24 @@
-"""Vercel entrypoint — exposes the FastAPI app from backend/."""
+"""Vercel entrypoint — exposes the FastAPI app from backend/.
+
+Vercel rewrites every request to /api/index and passes the original
+path in the `__path` query parameter (see vercel.json); restore it here.
+"""
 
 import os
 import sys
+from urllib.parse import parse_qsl, urlencode
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
-from app.main import app  # noqa: E402,F401
-
-_inner = app
+from app.main import app as _app  # noqa: E402
 
 
-async def app(scope, receive, send):  # noqa: F811  (temporary debug wrapper)
-    if scope["type"] == "http" and b"__debug" in scope.get("query_string", b""):
-        import json
-        body = json.dumps({
-            "path": scope.get("path"), "raw_path": str(scope.get("raw_path")),
-            "root_path": scope.get("root_path"), "qs": scope.get("query_string", b"").decode(),
-            "cwd": os.getcwd(), "frontend": os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "frontend")),
-            "headers": {k.decode(): v.decode() for k, v in scope.get("headers", []) if b"forward" in k or b"vercel" in k or b"path" in k or b"url" in k},
-        }).encode()
-        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
-        await send({"type": "http.response.body", "body": body})
-        return
-    await _inner(scope, receive, send)
+async def app(scope, receive, send):
+    if scope["type"] == "http":
+        params = parse_qsl(scope.get("query_string", b"").decode(), keep_blank_values=True)
+        path = next((v for k, v in params if k == "__path"), None)
+        if path is not None:
+            path = "/" + path.lstrip("/")
+            rest = urlencode([(k, v) for k, v in params if k != "__path"])
+            scope = {**scope, "path": path, "raw_path": path.encode(), "query_string": rest.encode()}
+    await _app(scope, receive, send)
