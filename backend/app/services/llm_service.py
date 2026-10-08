@@ -69,4 +69,7 @@ async def complete(prompt: str, *, parse_json: bool = False):
         raise
     except Exception as exc:
         print(f"❌ LLM error: {traceback.format_exc()}")
-        raise HTTPException(status_code=502, detail=f"LLM error: {exc}")
+        detail = str(exc)
+        if settings.GROQ_API_KEY:
+            detail = detail.replace(settings.GROQ_API_KEY, "***")
+        raise HTTPException(status_code=502, detail=f"LLM error: {detail}")

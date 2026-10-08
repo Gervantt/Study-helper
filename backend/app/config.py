@@ -7,7 +7,7 @@ import os
 
 
 class Settings:
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "").strip()
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1/chat/completions"
     MODEL: str = "openai/gpt-oss-120b"
     REQUEST_TIMEOUT: float = 60.0
