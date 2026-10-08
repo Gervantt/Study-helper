@@ -23,9 +23,13 @@ def _clean_json(text: str) -> str:
     return text
 
 
-async def _request(model: str, prompt: str) -> httpx.Response:
+async def complete(prompt: str, *, parse_json: bool = False):
+    """
+    Send a prompt to the LLM and return the response text.
+    If parse_json=True, attempt to extract and parse JSON from the response.
+    """
     payload = {
-        "model": model,
+        "model": settings.MODEL,
         "messages": [
             {"role": "system", "content": "Detect the language of the user's input and respond in that same language."},
             {"role": "user", "content": prompt},
@@ -33,40 +37,19 @@ async def _request(model: str, prompt: str) -> httpx.Response:
         "temperature": settings.TEMPERATURE,
         "max_tokens": settings.MAX_TOKENS,
     }
-    async with httpx.AsyncClient(timeout=settings.REQUEST_TIMEOUT) as client:
-        return await client.post(
-            settings.GROQ_BASE_URL,
-            headers={
-                "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
 
-
-async def complete(prompt: str, *, parse_json: bool = False):
-    """
-    Send a prompt to the LLM and return the response text.
-    Tries each model in settings.MODELS until one succeeds.
-    If parse_json=True, attempt to extract and parse JSON from the response.
-    """
     text = ""
     try:
-        response = None
-        for model in settings.MODELS:
-            try:
-                response = await _request(model, prompt)
-            except httpx.HTTPError as exc:
-                print(f"⚠️ {model} failed: {exc!r}")
-                continue
-            if response.status_code == 200:
-                break
-            print(f"⚠️ {model} HTTP {response.status_code}: {response.text[:300]}")
-            if response.status_code == 401:
-                break  # bad API key — other models won't help
+        async with httpx.AsyncClient(timeout=settings.REQUEST_TIMEOUT) as client:
+            response = await client.post(
+                settings.GROQ_BASE_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
 
-        if response is None:
-            raise HTTPException(status_code=502, detail="LLM error: all models unreachable")
         if response.status_code != 200:
             detail = response.text[:500]
             print(f"❌ LLM HTTP {response.status_code}: {detail}")
