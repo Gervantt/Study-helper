@@ -1,3 +1,13 @@
+---
+title: Study Helper
+emoji: 📚
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 📚 Study Helper — AI Exam Mode
 
 AI-powered study companion built with a clean, layered architecture.
